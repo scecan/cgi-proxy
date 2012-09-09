@@ -1,0 +1,82 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <parent>
+        <artifactId>cgi-proxy</artifactId>
+        <groupId>com.scecan</groupId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.scecan.cgiproxy</groupId>
+    <artifactId>gae-integration-dist</artifactId>
+    <packaging>war</packaging>
+
+    <name>CGI Proxy for Google App Engine</name>
+    <description>
+        Integration of com.scecan.cgiproxy:cgi-proxy-webapp to run on Google App Engine
+    </description>
+
+    <properties>
+        <com.google.appengine-version>1.7.1</com.google.appengine-version>
+        <appengine.sdk.root>${env.GAE_JAVA_SDK_HOME}</appengine.sdk.root>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.scecan.cgiproxy</groupId>
+            <artifactId>cgi-proxy-webapp</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <type>war</type>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-jdk14</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+    <build>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <configuration>
+                    <overlays>
+                        <overlay>
+                            <groupId>com.scecan.cgiproxy</groupId>
+                            <artifactId>cgi-proxy-webapp</artifactId>
+                            <excludes>
+                                <exclude>WEB-INF/classes/log4j.properties</exclude>
+                            </excludes>
+                        </overlay>
+                    </overlays>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>net.kindleit</groupId>
+                <artifactId>maven-gae-plugin</artifactId>
+                <version>0.9.4</version>
+                <configuration>
+                    <port>8090</port>
+                    <sdkDir>${appengine.sdk.root}</sdkDir>
+                </configuration>
+            </plugin>
+        </plugins>
+
+
+        <finalName>gae-cgi-proxy</finalName>
+    </build>
+</project>
