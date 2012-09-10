@@ -31,41 +31,12 @@ public class CGIProxyServlet extends HttpServlet {
 
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        //todo maybe to implement "getLastModified()"
         if (logger.isDebugEnabled()) {
             logger.debug("Request -> " + request.getMethod() + ": " + request.getRequestURI() +
                     (request.getQueryString() != null ? ("?" + request.getQueryString()) : ""));
         }
         cgiProxyService.forwardRequest(request, response);
 
-
-
-
-
-/*
-        HTTPMethod method = HTTPMethod.valueOf(request.getMethod());
-        System.out.println("Resolved Method: "+method);
-        HTTPRequest httpRequest = new HTTPRequest(url, method, fetchOptions);
-        Enumeration<String> headerNames = request.getHeaderNames();
-        while (headerNames.hasMoreElements()) {
-            String name = headerNames.nextElement();
-            String value = request.getHeader(name);
-            httpRequest.setHeader(new HTTPHeader(name, value));
-        }
-
-        HTTPResponse httpResponse = urlFetchService.fetch(httpRequest);
-
-        System.out.println("Response code: " + httpResponse.getResponseCode());
-
-        for (HTTPHeader header : httpResponse.getHeaders() ) {
-            response.setHeader(header.getName(), header.getValue());
-        }
-        byte[] content = httpResponse.getContent();
-
-        response.getOutputStream().write(content);
-        response.getOutputStream().flush();*/
-        
-        
     }
 
 }

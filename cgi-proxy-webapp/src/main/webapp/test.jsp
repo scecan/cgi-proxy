@@ -4,8 +4,19 @@
 <html>
 <head>
     <title>Test</title>
+
+    <link href="test2.jsp"/>
 </head>
 <body>
+
+    <script type="text/javascript"></script>
+
+    <iframe src="test2.jsp"> dadfasdf </iframe>
+
+
+
+
+
     Method: <%=request.getMethod()%>
     <br/>param1: <%=request.getParameter("param1")%>
     <br/>param2: <%=request.getParameter("param2")%>

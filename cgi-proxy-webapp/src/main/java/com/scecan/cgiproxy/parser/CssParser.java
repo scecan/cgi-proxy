@@ -39,12 +39,10 @@ public class CssParser extends ResponseParser {
         Matcher matcher = CSS_URL_PATTERN.matcher(css);
         StringBuffer buffer = new StringBuffer();
         while (matcher.find()) {
-            String prefix = matcher.group(1);
             String url = matcher.group(2);
-            String suffix = matcher.group(3);
             String refactoredUrl = requestURL.refactorUrl(url);
             logger.trace("Changed '{}' url with '{}' url", url, refactoredUrl);
-            matcher.appendReplacement(buffer, prefix + refactoredUrl + suffix);
+            matcher.appendReplacement(buffer, "$1" + refactoredUrl.replace("$","\\$") + "$3");
         }
         matcher.appendTail(buffer);
         String refactoredCss = buffer.toString();
