@@ -1,0 +1,36 @@
+(function (global) {
+
+    var originalLocation = {
+        prefixPath:'%s',
+        protocol:'%s',
+        host:'%s',
+        port:'%s'
+    }
+
+    function proxifyURL(url) {
+        var refactoredUrl = url;
+        if (url != null) {
+            if (url.indexOf('http://') == 0) {
+                refactoredUrl = originalLocation.prefixPath + '/http' + '/' + url
+            } else if (url.indexOf("https://") == 0) {
+                refactoredUrl = originalLocation.prefixPath + '/https' + '/' + url
+            } else if (url.indexOf("//") == 0) {
+                refactoredUrl = originalLocation.prefixPath + '/' +originalLocation.protocol + '/' + url
+            } else if (url.indexOf("/") == 0) {
+                refactoredUrl = originalLocation.prefixPath + '/' + originalLocation.protocol + "/"
+                    + originalLocation.host + ((originalLocation.port != -1) ? (":" + originalLocation.port) : "") + url;
+            }
+        }
+        return refactoredUrl;
+    }
+
+    if (global.XMLHttpRequest) {
+        var xhrOpenFn = global.XMLHttpRequest.prototype.open;
+        global.XMLHttpRequest.prototype.open = function () {
+            var urlToProxify = arguments[1];
+            arguments[1] = proxifyURL(urlToProxify);
+            console.log('xhr proxified: ' + urlToProxify + ' -> ' + arguments[1]);
+            return xhrOpenFn.apply(this, arguments);
+        }
+    }
+})(this);

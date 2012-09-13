@@ -1,9 +1,13 @@
 package com.scecan.cgiproxy.services;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import com.google.inject.name.Named;
+import com.scecan.cgiproxy.util.Configuration;
 import com.scecan.cgiproxy.util.ContentDecoder;
 import com.scecan.cgiproxy.parser.ResponseParser;
 import com.scecan.cgiproxy.util.IOUtils;
-import com.scecan.cgiproxy.util.RequestURL;
+import com.scecan.cgiproxy.util.URLBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +25,7 @@ import java.util.Map;
 /**
  * @author Sandu Cecan
  */
+@Singleton
 public class CGIProxyService {
 
     private static final Logger logger = LoggerFactory.getLogger(CGIProxyService.class);
@@ -42,30 +47,18 @@ public class CGIProxyService {
             "X-ProxyUser-IP"
     );
 
-    private final String prefixPath;
 
-    private CGIProxyService(String prefixPath) {
-        this.prefixPath = prefixPath;
+    private final String proxyPath;
 
-        logger.info("Initialized CGIProxyService with the prefixPath='{}'", this.prefixPath);
+    @Inject
+    private CGIProxyService(@Named(Configuration.PROXY_PATH) String proxyPath) {
+        this.proxyPath = proxyPath;
+
+        logger.info("Initialized CGIProxyService with the proxyPath='{}'", this.proxyPath);
     }
 
-    public static CGIProxyService initializeGAEProxyService(String contextPath, String urlPattern) {
-        logger.info("Initializing CGIProxyService (contextPath='{}' and urlPattern='{}'", contextPath, urlPattern);
-        String path = contextPath.concat(urlPattern);
-        int index = path.indexOf("*");
-        if (index != -1 && index == path.length()-1) {
-            String prefixPath = path.substring(0, index);
-            return new CGIProxyService(prefixPath);
-        } else {
-            throw new IllegalArgumentException("url-pattern parameter not configured properly");
-        }
-    }
-
-
-    public void forwardRequest(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        RequestURL requestURL = RequestURL.build(request.getPathInfo(), request.getQueryString(), prefixPath);
-        HttpURLConnection connection = initHttpConnection(requestURL);
+    public void proxifyRequestedURL(HttpServletRequest request, HttpServletResponse response, URL requestedURL) throws ServletException, IOException {
+        HttpURLConnection connection = initHttpConnection(requestedURL);
 
         String method = request.getMethod();
         connection.setRequestMethod(method);
@@ -79,16 +72,13 @@ public class CGIProxyService {
         logger.debug("Response code: {}", connection.getResponseCode());
         response.setStatus(connection.getResponseCode());
         // todo handle error codes
-        setResponseHeaders(connection, response, requestURL);
-        sendBodyToResponse(connection, response, requestURL);
-
-
+        setResponseHeaders(connection, response, requestedURL);
+        sendBodyToResponse(connection, response, requestedURL);
     }
 
-    private HttpURLConnection initHttpConnection(RequestURL requestURL) throws IOException {
-        URL url = requestURL.createURL();
-        logger.debug("Fetch {}", url.toString());
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+    private HttpURLConnection initHttpConnection(URL requestURL) throws IOException {
+        logger.debug("Fetch {}", requestURL.toString());
+        HttpURLConnection connection = (HttpURLConnection) requestURL.openConnection();
         // configure the connection
         connection.setInstanceFollowRedirects(false); //let the browser to handle 30x redirects
         return connection;
@@ -116,14 +106,14 @@ public class CGIProxyService {
         IOUtils.pipe(is, os, new byte[100]);
     }
 
-    private void setResponseHeaders(HttpURLConnection connection, HttpServletResponse response, RequestURL requestURL) {
+    private void setResponseHeaders(HttpURLConnection connection, HttpServletResponse response, URL requestedURL) {
         Map<String, List<String>> headersMap = connection.getHeaderFields();
         for (Map.Entry<String, List<String>> headerEntry : headersMap.entrySet()) {
             String name = headerEntry.getKey();
             for (String value : headerEntry.getValue()) {
                 if (LOCATION_HEADER_NAME.equals(name)) {
                     // refactor domain specific headers
-                    value = requestURL.refactorUrl(value);
+                    value = URLBuilder.proxifyURL(value, proxyPath, requestedURL);
                 } else if(HEADERS_HANDLED_BY_SERVLET_CONTAINER.contains(name)) {
                     break; // ignore those headers, they are handled by the servlet container
                 } else {
@@ -135,7 +125,7 @@ public class CGIProxyService {
         }
     }
 
-    private void sendBodyToResponse(HttpURLConnection connection, HttpServletResponse response, RequestURL requestURL) throws IOException {
+    private void sendBodyToResponse(HttpURLConnection connection, HttpServletResponse response, URL requestedURL) throws IOException {
         String contentEncodingValue = connection.getContentEncoding();
         String contentTypeValue = connection.getContentType();
         logger.debug("Content-Encoding: {}", contentEncodingValue);
@@ -144,10 +134,10 @@ public class CGIProxyService {
         InputStream decodedInputStream = ContentDecoder.decode(contentEncodingValue, connection.getInputStream());
         OutputStream outputStream = response.getOutputStream();
         // get the proper Parser for this Content-Type
-        ResponseParser parser = ResponseParser.getParser(contentTypeValue, requestURL);
+        ResponseParser parser = ResponseParser.createParser(contentTypeValue);
         if (parser != null) { // if we have an parser for this 'Content-Type'
             // parse the content
-            InputStream parsedInputStream = parser.parse(decodedInputStream);
+            InputStream parsedInputStream = parser.parse(decodedInputStream, proxyPath, requestedURL);
 
             IOUtils.pipe(parsedInputStream, outputStream, new byte[1024]);
         } else {

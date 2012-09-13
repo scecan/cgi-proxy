@@ -3,9 +3,11 @@ package com.scecan.cgiproxy.util;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertSame;
@@ -16,21 +18,47 @@ import static junit.framework.Assert.assertSame;
 public class ContentDecoderTest {
 
     @Test
-    public void testFactoryMethod() throws IOException {
-        InputStream inputStream = new ByteArrayInputStream(new byte[]{0,1,2,3,4,5,6,7,8,9});
+    public void testNoEncoding() throws IOException {
 
-        InputStream decoded1 = ContentDecoder.decode(null, inputStream);
-        assertSame(inputStream, decoded1);
+        InputStream encodedInputStream = new ByteArrayInputStream(new byte[]{0,1,2,3,4,5,6,7,8,9});
+        InputStream decodedInputStream1 = ContentDecoder.decode(null, encodedInputStream);
 
-//        InputStream decoded2 = ContentDecoder.decode("gzip", inputStream);
-//        assertEquals(GZIPInputStream.class, decoded2.getClass());
+        assertSame(encodedInputStream, decodedInputStream1);
+
+        InputStream decodedInputStream2 = ContentDecoder.decode("   ", encodedInputStream);
+
+        assertSame(encodedInputStream, decodedInputStream2);
+    }
+
+    @Test
+    public void testGzipEncoding() throws IOException {
+        // unencoded bytes
+        byte[] unencodedBytes = new byte[]{0,1,2,3,4,5,6,7,8,9};
+        // encode bytes using GZIP
+        ByteArrayOutputStream encodedOutputStream = new ByteArrayOutputStream();
+        GZIPOutputStream gzipOutputStream = new GZIPOutputStream(encodedOutputStream);
+        IOUtils.pipe(new ByteArrayInputStream(unencodedBytes), gzipOutputStream, new byte[10]);
+        gzipOutputStream.finish();
+        // encoded bytes
+        byte[] encodedBytes = encodedOutputStream.toByteArray();
+        // decode encoded bytes using ContentDecoder
+        InputStream decodedInputStream = ContentDecoder.decode("gzip", new ByteArrayInputStream(encodedBytes));
+        assertSame(GZIPInputStream.class, decodedInputStream.getClass());
+        ByteArrayOutputStream decodedOutputStream = new ByteArrayOutputStream();
+        IOUtils.pipe(decodedInputStream, decodedOutputStream, new byte[10]);
+        // decoded bytes
+        byte[] decodedBytes = decodedOutputStream.toByteArray();
+        // asserts
+        assertEquals(unencodedBytes.length, decodedBytes.length);
+        for (int i = 0; i < unencodedBytes.length; i++)
+            assertEquals(unencodedBytes[i], decodedBytes[i]);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testFactoryMethod2() throws IOException {
+    public void testUnknownEncoding() throws IOException {
         InputStream inputStream = new ByteArrayInputStream(new byte[]{0,1});
 
-        InputStream decoded1 = ContentDecoder.decode("unknownContentEncoding", inputStream);
+        InputStream unknown = ContentDecoder.decode("unknownContentEncoding", inputStream);
     }
 
 }

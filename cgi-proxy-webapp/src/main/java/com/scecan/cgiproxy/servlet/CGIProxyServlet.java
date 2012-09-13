@@ -1,6 +1,9 @@
-package com.scecan.cgiproxy;
+package com.scecan.cgiproxy.servlet;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.scecan.cgiproxy.services.CGIProxyService;
+import com.scecan.cgiproxy.util.URLBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,24 +12,24 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URL;
 
+@Singleton
 public class CGIProxyServlet extends HttpServlet {
 
     private static final Logger logger = LoggerFactory.getLogger(CGIProxyServlet.class);
-    
-    private static final String URL_PATTERN_PARAM = "url-pattern";
 
-    private CGIProxyService cgiProxyService;
+
+    private final CGIProxyService cgiProxyService;
+
+    @Inject
+    public CGIProxyServlet(CGIProxyService cgiProxyService) {
+        this.cgiProxyService = cgiProxyService;
+    }
 
     @Override
     public void init() throws ServletException {
-
         logger.info("Initialize CGIProxyServlet");
-        
-        String contextPath = getServletContext().getContextPath();
-        String urlPattern = this.getInitParameter(URL_PATTERN_PARAM);
-
-        cgiProxyService = cgiProxyService.initializeGAEProxyService(contextPath, urlPattern);
     }
 
     @Override
@@ -35,7 +38,10 @@ public class CGIProxyServlet extends HttpServlet {
             logger.debug("Request -> " + request.getMethod() + ": " + request.getRequestURI() +
                     (request.getQueryString() != null ? ("?" + request.getQueryString()) : ""));
         }
-        cgiProxyService.forwardRequest(request, response);
+
+        URL requestedURL = URLBuilder.getRequestedURL(request.getPathInfo(), request.getQueryString());
+
+        cgiProxyService.proxifyRequestedURL(request, response, requestedURL);
 
     }
 

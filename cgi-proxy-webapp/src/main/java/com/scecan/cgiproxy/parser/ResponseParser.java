@@ -1,9 +1,8 @@
 package com.scecan.cgiproxy.parser;
 
-import com.scecan.cgiproxy.util.RequestURL;
-
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 
 /**
  * @author Sandu Cecan
@@ -19,7 +18,7 @@ public abstract class ResponseParser {
         static final String CSS     =   "text/css";
     }
 
-    public static ResponseParser getParser(String contentType, RequestURL requestURL) {
+    public static ResponseParser createParser(String contentType) {
 
         String charset = null;
         String mediaType = null;
@@ -37,9 +36,9 @@ public abstract class ResponseParser {
         }
 
         if (MediaType.HTML.equals(mediaType)) {
-            return new HtmlParser(charset, requestURL);
+            return new HtmlParser(charset);
         } else if (MediaType.CSS.equals(mediaType)) {
-            return new CssParser(charset, requestURL);
+            return new CssParser(charset);
         } else {
             return null;
         }
@@ -53,7 +52,7 @@ public abstract class ResponseParser {
         return charset;
     }
 
-    public abstract InputStream parse(InputStream inputStream) throws IOException;
+    public abstract InputStream parse(InputStream inputStream, String proxyPath, URL hostURL) throws IOException;
     
     
 
