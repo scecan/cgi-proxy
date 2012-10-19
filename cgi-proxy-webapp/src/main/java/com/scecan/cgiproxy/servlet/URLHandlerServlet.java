@@ -3,7 +3,7 @@ package com.scecan.cgiproxy.servlet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
-import com.scecan.cgiproxy.util.Configuration;
+import com.scecan.cgiproxy.guice.Constants;
 import com.scecan.cgiproxy.util.URLBuilder;
 
 import javax.servlet.ServletException;
@@ -22,7 +22,7 @@ public class URLHandlerServlet extends HttpServlet {
     protected final String proxyPath;
 
     @Inject
-    public URLHandlerServlet(@Named(Configuration.PROXY_PATH) String proxyPath) {
+    public URLHandlerServlet(@Named(Constants.PROXY_PATH_ANNOTATION) String proxyPath) {
         this.proxyPath = proxyPath;
     }
 

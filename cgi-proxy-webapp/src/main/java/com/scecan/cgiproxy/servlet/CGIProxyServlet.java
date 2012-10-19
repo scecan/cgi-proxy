@@ -1,7 +1,9 @@
 package com.scecan.cgiproxy.servlet;
 
 import com.google.inject.Inject;
+import com.google.inject.Key;
 import com.google.inject.Singleton;
+import com.google.inject.name.Names;
 import com.scecan.cgiproxy.services.CGIProxyService;
 import com.scecan.cgiproxy.util.URLBuilder;
 import org.slf4j.Logger;
@@ -40,6 +42,8 @@ public class CGIProxyServlet extends HttpServlet {
         }
 
         URL requestedURL = URLBuilder.getRequestedURL(request.getPathInfo(), request.getQueryString());
+
+        request.setAttribute(Key.get(URL.class, Names.named("requested-url")).toString(), requestedURL);
 
         cgiProxyService.proxifyRequestedURL(request, response, requestedURL);
 

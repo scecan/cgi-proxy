@@ -1,8 +1,10 @@
 package com.scecan.cgiproxy.services;
 
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
+import com.scecan.cgiproxy.guice.Constants;
 import com.scecan.cgiproxy.util.Configuration;
 import com.scecan.cgiproxy.util.ContentDecoder;
 import com.scecan.cgiproxy.parser.ResponseParser;
@@ -17,10 +19,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Sandu Cecan
@@ -30,30 +29,29 @@ public class CGIProxyService {
 
     private static final Logger logger = LoggerFactory.getLogger(CGIProxyService.class);
 
-    private static final List<String> HEADERS_HANDLED_BY_SERVLET_CONTAINER = Arrays.asList(
-            "Transfer-Encoding",
-            "Content-Encoding",
-            "Content-Length"
-    );
+    /**
+     * Those headers should be ignored in the response because they are set by the servlet container.
+     */
+    private static final Set<String> HEADERS_HANDLED_BY_SERVLET_CONTAINER = Collections.unmodifiableSet(
+            new HashSet<String>(Arrays.asList(
+                    "Transfer-Encoding",
+                    "Content-Encoding",
+                    "Content-Length"
+            )));
 
     private static final String LOCATION_HEADER_NAME = "Location";
 
-    private static final List<String> EXCLUDED_HEADERS = Arrays.asList(
-            "Content-Length",
-            "Host",
-            "Vary",
-            "Via",
-            "X-Forwarded-For",
-            "X-ProxyUser-IP"
-    );
-
-
+    /**
+     * The path to the proxy servlet
+     */
     private final String proxyPath;
+    private final Provider<Configuration> configurationProvider;
 
     @Inject
-    private CGIProxyService(@Named(Configuration.PROXY_PATH) String proxyPath) {
+    private CGIProxyService(@Named(Constants.PROXY_PATH_ANNOTATION) String proxyPath,
+                            Provider<Configuration> configurationProvider) {
         this.proxyPath = proxyPath;
-
+        this.configurationProvider = configurationProvider;
         logger.info("Initialized CGIProxyService with the proxyPath='{}'", this.proxyPath);
     }
 
@@ -85,10 +83,11 @@ public class CGIProxyService {
     }
 
     private void setRequestHeaders(HttpServletRequest request, HttpURLConnection connection) {
+        Configuration config = configurationProvider.get();
         Enumeration<String> headerNames = request.getHeaderNames();
         while (headerNames.hasMoreElements()) {
             String name = headerNames.nextElement();
-            if ( ! EXCLUDED_HEADERS.contains(name) ) {
+            if ( ! config.isHttpHeaderExcluded(name) ) {
                 Enumeration<String> headerValues = request.getHeaders(name);
                 while (headerValues.hasMoreElements()) {
                     String value = headerValues.nextElement();

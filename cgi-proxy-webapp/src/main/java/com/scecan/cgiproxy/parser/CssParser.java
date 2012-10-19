@@ -32,7 +32,15 @@ public class CssParser extends ResponseParser {
         logger.trace("Parsed CSS:\n{}", outputCss);
         return IOUtils.toInputStream(outputCss, charset);
     }
-    
+
+    /**
+     * Proxifies all URLs from the CSS.
+     *
+     * @param css the CSS to proxify
+     * @param proxyPath the path to the servlet which is used to proxify URLs
+     * @param hostURL the host URL where CSS is located
+     * @return CSS with all URLs in it proxified
+     */
     public static String proxifyCssUrls(String css, String proxyPath, URL hostURL) {
         Matcher matcher = CSS_URL_PATTERN.matcher(css);
         StringBuffer buffer = new StringBuffer();
