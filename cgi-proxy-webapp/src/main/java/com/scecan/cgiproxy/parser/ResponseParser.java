@@ -1,5 +1,7 @@
 package com.scecan.cgiproxy.parser;
 
+import com.scecan.cgiproxy.util.URLProxifier;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -64,12 +66,11 @@ public abstract class ResponseParser {
     /**
      * Parses the input stream and proxifies all URL in it
      * @param inputStream the input stream to parse
-     * @param proxyPath the path to the servlet which is used to proxify URLs
-     * @param hostURL the host URL of this input stream
+     * @param urlProxifier the implementation used to proxify URLs if needed
      * @return a new parsed input stream
      * @throws IOException
      */
-    public abstract InputStream parse(InputStream inputStream, String proxyPath, URL hostURL) throws IOException;
+    public abstract InputStream parse(InputStream inputStream, URLProxifier urlProxifier) throws IOException;
 
 
 }

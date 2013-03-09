@@ -1,31 +1,23 @@
 package com.scecan.cgiproxy.util;
 
-import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.google.inject.name.Named;
-import com.google.inject.servlet.SessionScoped;
-import com.scecan.cgiproxy.guice.Constants;
-import com.scecan.cgiproxy.providers.RequestedUrlProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.InputStream;
 import java.io.Serializable;
-import java.net.URL;
 import java.util.*;
 
 /**
  * @author Sandu Cecan
  */
-@SessionScoped
 public class Configuration implements Serializable {
 
     private static final long serialVersionUID = 1;
 
     private static final Logger logger = LoggerFactory.getLogger(Configuration.class);
 
-    private static final String CONFIG_FILE = "/config.properties";
+    private static final String CONFIG_FILE = "/cgi-proxy-config.properties";
 
     private static interface ConfigNames {
         static final String EXCLUDED_HTTP_HEADERS = "http.headers.excluded";
@@ -33,10 +25,19 @@ public class Configuration implements Serializable {
 
     private static final Properties config = new Properties();
     static {
+        InputStream is = null;
         try {
-            config.load(Configuration.class.getResourceAsStream(CONFIG_FILE));
+            is = Configuration.class.getResourceAsStream(CONFIG_FILE);
+            config.load(is);
         } catch (IOException e) {
             logger.error("Could not load configuration file", e);
+        } finally {
+            if (is != null)
+                try {
+                    is.close();
+                } catch (IOException e) {
+                    // ignore
+                }
         }
     }
 
@@ -53,15 +54,9 @@ public class Configuration implements Serializable {
 
     private final Set<String> excludedHttpHeaders = new HashSet<String>();
 
-    private final String proxyPath;
-    private final RequestedUrlProvider requestedUrlProvider;
 
-    @Inject
-    public Configuration(@Named(Constants.PROXY_PATH_ANNOTATION) String proxyPath,
-                         RequestedUrlProvider requestedUrlProvider) {
+    public Configuration() {
 
-        this.proxyPath = proxyPath;
-        this.requestedUrlProvider = requestedUrlProvider;
 
         String headers = config.getProperty(ConfigNames.EXCLUDED_HTTP_HEADERS, "");
         for (String header : headers.split(",")) {
@@ -85,7 +80,6 @@ public class Configuration implements Serializable {
 //    private boolean returnEmptyGIF = true; //todo
 
     public boolean isHttpHeaderExcluded(String headerName) {
-        requestedUrlProvider.get();
         return excludedHttpHeaders.contains(headerName);
     }
 

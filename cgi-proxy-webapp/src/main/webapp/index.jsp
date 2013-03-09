@@ -1,3 +1,4 @@
+<%@ page import="com.scecan.cgiproxy.servlet.CGIProxyServlet" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -28,8 +29,8 @@
 <body>
 <div class="box">
     <h1>My Proxy Server</h1>
-    <form action="${pageContext.request.contextPath}/guice/proxify" method="POST">
-        <input name="url" type="text" class="txt" placeholder="type url here..."/>
+    <form action="${pageContext.request.contextPath}/proxy" method="GET">
+        <input name="<%=CGIProxyServlet.URL_TO_PROXIFY_PARAM%>" type="text" class="txt" placeholder="type url here..."/>
         <input type="submit" class="btn" value="Proxify"/>
     </form>
 </div>

@@ -2,6 +2,7 @@ package com.scecan.cgiproxy.parser;
 
 import com.scecan.cgiproxy.util.IOUtils;
 import com.scecan.cgiproxy.util.URLBuilder;
+import com.scecan.cgiproxy.util.URLProxifier;
 import org.htmlparser.Node;
 import org.htmlparser.Parser;
 import org.htmlparser.Tag;
@@ -28,7 +29,7 @@ public class HtmlParser extends ResponseParser {
     }
 
     @Override
-    public InputStream parse(InputStream inputStream , String proxyPath, URL hostURL) throws IOException {
+    public InputStream parse(InputStream inputStream , URLProxifier urlProxifier) throws IOException {
         logger.debug("Parsing HTML");
         String inputHtml = IOUtils.toString(inputStream, charset);
         logger.trace("Received HTML:\n{}", inputHtml);
@@ -37,7 +38,7 @@ public class HtmlParser extends ResponseParser {
         try {
             NodeList root = parser.parse(null);
 
-            root.visitAllNodesWith(new HtmlProxifier(proxyPath, hostURL));
+            root.visitAllNodesWith(new HtmlProxifier(urlProxifier));
             outputHtml = root.toHtml();
             logger.trace("Parsed HTML:\n{}", inputHtml);
         } catch (ParserException e) {
@@ -60,12 +61,10 @@ public class HtmlParser extends ResponseParser {
             XHR_PROXY_SCRIPT = temp;
         }
 
-        private final String proxyPath;
-        private final URL hostURL;
+        private final URLProxifier urlProxifier;
 
-        public HtmlProxifier(String proxyPath, URL hostURL) {
-            this.proxyPath = proxyPath;
-            this.hostURL = hostURL;
+        public HtmlProxifier(URLProxifier urlProxifier) {
+            this.urlProxifier = urlProxifier;
         }
 
         @Override
@@ -75,34 +74,35 @@ public class HtmlParser extends ResponseParser {
                 LinkTag linkTag = (LinkTag) tag;
                 String url = linkTag.getLink();
                 if (url != null)
-                    linkTag.setLink( URLBuilder.proxifyURL(url, proxyPath, hostURL) );
+                    linkTag.setLink( urlProxifier.proxify(url) );
             } else if(tag instanceof ImageTag) {
                 ImageTag imageTag = (ImageTag) tag;
                 String url = imageTag.getImageURL();
                 if (url != null)
-                    imageTag.setImageURL( URLBuilder.proxifyURL(url, proxyPath, hostURL) );
+                    imageTag.setImageURL( urlProxifier.proxify(url) );
             } else if (tag instanceof ScriptTag) {
                 ScriptTag scriptTag = (ScriptTag) tag;
                 String url = scriptTag.getAttribute("src");
                 if (url != null)
-                    scriptTag.setAttribute("src", URLBuilder.proxifyURL(url, proxyPath, hostURL) );
+                    scriptTag.setAttribute("src", urlProxifier.proxify(url) );
             } else if (tag instanceof FrameTag) {
                 FrameTag frameTag = (FrameTag) tag;
                 String url = frameTag.getFrameLocation();
                 if (url != null)
-                    frameTag.setFrameLocation( URLBuilder.proxifyURL(url, proxyPath, hostURL) );
+                    frameTag.setFrameLocation( urlProxifier.proxify(url) );
             } else if (tag instanceof FormTag) {
                 FormTag formTag = (FormTag) tag;
                 String url = formTag.getFormLocation();
                 if (url != null) {
-                    formTag.setFormLocation( URLBuilder.proxifyURL(url, proxyPath, hostURL) );
+                    formTag.setFormLocation( urlProxifier.proxify(url) );
                 }
             } else if (tag instanceof ObjectTag) {
                 //todo
             } else if (tag instanceof AppletTag) {
                 //todo
             } else if (tag instanceof HeadTag) {
-                ScriptTag scriptTag = new ScriptTag();
+                //todo experimental XHR_PROXY_SCRIPT
+                /*ScriptTag scriptTag = new ScriptTag();
                 scriptTag.setType("text/javascript");
                 scriptTag.setScriptCode(String.format(XHR_PROXY_SCRIPT, proxyPath, hostURL.getProtocol(), hostURL.getHost(), hostURL.getPort()));
                 TagNode endTag = new TagNode();
@@ -127,21 +127,21 @@ public class HtmlParser extends ResponseParser {
                     list.add(scriptTag);
                     scriptInserted = true;
                 }
-                tag.setChildren(list);
+                tag.setChildren(list);*/
             } else if ("link".equalsIgnoreCase(tag.getTagName())) {
                 String url = tag.getAttribute("href");
                 if (url != null) {
-                    tag.setAttribute("href", URLBuilder.proxifyURL(url, proxyPath, hostURL));
+                    tag.setAttribute("href", urlProxifier.proxify(url) );
                 }
             } else if ("iframe".equalsIgnoreCase(tag.getTagName())) {
                 String url = tag.getAttribute("src");
                 if (url != null) {
-                    tag.setAttribute("src", URLBuilder.proxifyURL(url, proxyPath, hostURL));
+                    tag.setAttribute("src", urlProxifier.proxify(url) );
                 }
             }
         }
 
-        /*@Override
+        /*@Override  todo for style tags
         public void visitStringNode(Text string) {
             if (string.getParent() instanceof Tag) {
                 String parentTagName = ((Tag)string.getParent()).getTagName();

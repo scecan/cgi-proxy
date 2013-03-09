@@ -3,14 +3,18 @@ package com.scecan.cgiproxy.util;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Sandu Cecan
  */
 public class URLBuilder {
 
-    private final static List<String> VALID_PROTOCOLS = Arrays.asList("http", "https");
+    private final static Set<String> VALID_PROTOCOLS = Collections.unmodifiableSet(
+            new HashSet<String>(Arrays.asList("http", "https"))
+    );
 
     public static URL getRequestedURL(String pathInfo, String queryString) throws MalformedURLException {
         if (pathInfo != null) {

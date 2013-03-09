@@ -1,10 +1,5 @@
 package com.scecan.cgiproxy.services;
 
-import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.google.inject.Singleton;
-import com.google.inject.name.Named;
-import com.scecan.cgiproxy.guice.Constants;
 import com.scecan.cgiproxy.util.Configuration;
 import com.scecan.cgiproxy.util.ContentDecoder;
 import com.scecan.cgiproxy.parser.ResponseParser;
@@ -13,6 +8,7 @@ import com.scecan.cgiproxy.util.URLBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -24,14 +20,13 @@ import java.util.*;
 /**
  * @author Sandu Cecan
  */
-@Singleton
 public class CGIProxyService {
 
-    private static final Logger logger = LoggerFactory.getLogger(CGIProxyService.class);
+    /*private static final Logger logger = LoggerFactory.getLogger(CGIProxyService.class);
 
-    /**
+    *//**
      * Those headers should be ignored in the response because they are set by the servlet container.
-     */
+     *//*
     private static final Set<String> HEADERS_HANDLED_BY_SERVLET_CONTAINER = Collections.unmodifiableSet(
             new HashSet<String>(Arrays.asList(
                     "Transfer-Encoding",
@@ -41,18 +36,14 @@ public class CGIProxyService {
 
     private static final String LOCATION_HEADER_NAME = "Location";
 
-    /**
-     * The path to the proxy servlet
-     */
-    private final String proxyPath;
-    private final Provider<Configuration> configurationProvider;
 
-    @Inject
-    private CGIProxyService(@Named(Constants.PROXY_PATH_ANNOTATION) String proxyPath,
-                            Provider<Configuration> configurationProvider) {
-        this.proxyPath = proxyPath;
-        this.configurationProvider = configurationProvider;
-        logger.info("Initialized CGIProxyService with the proxyPath='{}'", this.proxyPath);
+    public static CGIProxyService instantiate(ServletContext servletContext) {
+        String contextPath = servletContext.getContextPath();
+        return new CGIProxyService(); //todo
+    }
+
+    private CGIProxyService() {
+        logger.debug("Initialize {} service.", this.getClass().getName());
     }
 
     public void proxifyRequestedURL(HttpServletRequest request, HttpServletResponse response, URL requestedURL) throws ServletException, IOException {
@@ -124,6 +115,7 @@ public class CGIProxyService {
         }
     }
 
+
     private void sendBodyToResponse(HttpURLConnection connection, HttpServletResponse response, URL requestedURL) throws IOException {
         String contentEncodingValue = connection.getContentEncoding();
         String contentTypeValue = connection.getContentType();
@@ -142,9 +134,5 @@ public class CGIProxyService {
         } else {
             IOUtils.pipe(decodedInputStream, outputStream, new byte[1024]);
         }
-    }
-
-
-
-
+    }*/
 }
